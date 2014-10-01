@@ -38,6 +38,9 @@ class Gtalkbot extends Adapter
     @client.on 'stanza', (stanza) => @readStanza(stanza)
     @client.on 'error', (err) => @error(err)
 
+    # List of friends to notify for "group chat" style messages
+    @friends = []
+
   online: ->
     self = @
 
@@ -145,6 +148,15 @@ class Gtalkbot extends Adapter
     # http://xmpp.org/rfcs/rfc3921.html#rfc.section.2.2.1
     stanza.attrs.type ?= 'available'
 
+    # Create the GTalk group chat workarond friends list
+    if stanza.name == "presence"
+      # TODO: No idea how GTalk roster should be parsed....
+      tail = stanza.from.indexOf("/gmail")
+      if tail > 0
+        email = stanza.from.substring 0, tail
+        if @friends.indexOf(email) < 0
+          @friends.push email
+
     switch stanza.attrs.type
       when 'subscribe'
         @robot.logger.info "#{jid.from()} subscribed to us"
@@ -208,6 +220,26 @@ class Gtalkbot extends Adapter
     return ignore
 
   send: (envelope, strings...) ->
+
+    # Currently GTalk doesn't support group chats
+    # over XMPP (you need Hangout for this, blame that Google+ shit).
+    # So instead of sending the message to a particular chat room,
+    # send the message privately to all trusted persons in the roster.
+    if envelope.room
+      @robot.logger.info "Sending message to all friends ", @friends
+
+      for friend in @friends
+        for str in strings
+          message = new ltx.Element('message',
+              from: @client.jid.toString()
+              to: friend
+              type: "chat"
+            ).
+            c('body').t(str)
+          # Send it off
+          @client.send message
+      return
+
     for str in strings
       message = new ltx.Element('message',
           from: @client.jid.toString()
