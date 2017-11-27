@@ -6,6 +6,14 @@ provided by Google.
 You should report any issues or submit any pull requests to the
 [GTalk adapter](https://github.com/atmos/hubot-gtalk) repository.
 
+## GTalk does not support group chats
+
+Google has disabled group chat functionality for non-Google applications.
+As a workaround, `hubot-gtalk` sends room messages to all whitelisted
+friends in 1-to-1 chats.
+
+This allows external Hubot messages to work reliably on GTalk.
+
 ## Getting Started
 
 You will also need to edit the `package.json` for your hubot and add the
